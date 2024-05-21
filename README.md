@@ -1,1 +1,3 @@
 # Banco
+
+python banco.py
