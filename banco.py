@@ -6,7 +6,7 @@ class Cliente:
     def __init__(self, endereco):
         self.endereco = endereco
         self.contas = []
-    def realizar_transacao(self, conta, transacao):
+    def realizaTransacao(self, conta, transacao):
         transacao.registrar(conta)
 
     def adicionar_conta(self, conta):
@@ -28,12 +28,12 @@ class Conta:
         self._historico = Historico()
     
     @classmethod
-    def nova_conta(cls, cliente, numero):
+    def criaContaNova(cls, cliente, numero):
         return cls(numero, cliente)
     
     @property
-    def saldo(self):
-        return self._saldo
+    def historico(self):
+        return self._historico
     
     @property
     def numero(self):
@@ -42,14 +42,14 @@ class Conta:
     @property
     def agencia(self):
         return self._agencia
+
+    @property
+    def saldo(self):
+        return self._saldo
     
     @property
     def cliente(self):
         return self._cliente
-    
-    @property
-    def historico(self):
-        return self._historico
 
     def sacar(self, valor):
         if valor <= 0:
@@ -103,7 +103,7 @@ class Historico:
     def transacoes(self):
         return self._transacoes
     
-    def adicionar_transacao(self, transacao):
+    def transacaoHistorico(self, transacao):
         self._transacoes.append({
             "tipo": transacao.__class__.__name__,
             "valor": transacao.valor
@@ -131,7 +131,7 @@ class Saque(Transacao):
         sucesso = conta.sacar(self.valor)
 
         if sucesso:
-            conta.historico.adicionar_transacao(self)     
+            conta.historico.transacaoHistorico(self)     
     
 class Deposito(Transacao):
     def __init__(self, valor):
@@ -145,7 +145,7 @@ class Deposito(Transacao):
         sucesso = conta.depositar(self.valor)
 
         if sucesso:
-            conta.historico.adicionar_transacao(self)
+            conta.historico.transacaoHistorico(self)
 
 def menu():
     print("1. Criar Usuário")
@@ -160,12 +160,12 @@ def menu():
     return opcao
 
 
-def filtrar_cliente(cpf, clientes):
+def findClient(cpf, clientes):
     clientes_filtrados = [cliente for cliente in clientes if cliente.cpf == cpf]
     return clientes_filtrados[0] if clientes_filtrados else None
 
 
-def recuperar_conta_cliente(cliente):
+def recuperarConta(cliente):
     if not cliente.contas:
         print("Cliente não possui conta!")
         return
@@ -176,7 +176,7 @@ def recuperar_conta_cliente(cliente):
 
 def depositar(clientes):
     cpf = input("Informe o CPF do cliente: ")
-    cliente = filtrar_cliente(cpf, clientes)
+    cliente = findClient(cpf, clientes)
 
     if not cliente:
         print("Cliente não encontrado!")
@@ -185,16 +185,16 @@ def depositar(clientes):
     valor = float(input("Informe o valor do depósito: "))
     transacao = Deposito(valor)
 
-    conta = recuperar_conta_cliente(cliente)
+    conta = recuperarConta(cliente)
     if not conta:
         return
 
-    cliente.realizar_transacao(conta, transacao)
+    cliente.realizaTransacao(conta, transacao)
 
 
 def sacar(clientes):
     cpf = input("Informe o CPF do cliente: ")
-    cliente = filtrar_cliente(cpf, clientes)
+    cliente = findClient(cpf, clientes)
 
     if not cliente:
         print("Cliente não encontrado!")
@@ -203,22 +203,22 @@ def sacar(clientes):
     valor = float(input("Informe o valor do saque: "))
     transacao = Saque(valor)
 
-    conta = recuperar_conta_cliente(cliente)
+    conta = recuperarConta(cliente)
     if not conta:
         return
 
-    cliente.realizar_transacao(conta, transacao)
+    cliente.realizaTransacao(conta, transacao)
 
 
-def exibir_extrato(clientes):
+def listaExtrato(clientes):
     cpf = input("Informe o CPF do cliente: ")
-    cliente = filtrar_cliente(cpf, clientes)
+    cliente = findClient(cpf, clientes)
 
     if not cliente:
         print("Cliente não encontrado!")
         return
 
-    conta = recuperar_conta_cliente(cliente)
+    conta = recuperarConta(cliente)
     if not conta:
         return
 
@@ -237,9 +237,9 @@ def exibir_extrato(clientes):
     print("==========================================")
 
 
-def criar_cliente(clientes):
+def newClient(clientes):
     cpf = input("Informe o CPF (somente número): ")
-    cliente = filtrar_cliente(cpf, clientes)
+    cliente = findClient(cpf, clientes)
 
     if cliente:
         print("Já existe cliente com esse CPF!")
@@ -256,22 +256,22 @@ def criar_cliente(clientes):
     print("\n=== Cliente criado com sucesso! ===")
 
 
-def criar_conta(numero_conta, clientes, contas):
+def newConta(nrConta, clientes, contas):
     cpf = input("Informe o CPF do cliente: ")
-    cliente = filtrar_cliente(cpf, clientes)
+    cliente = findClient(cpf, clientes)
 
     if not cliente:
-        print("Cliente não encontrado, fluxo de criação de conta encerrado!")
+        print("Cliente não encontrado!")
         return
 
-    conta = ContaCorrente.nova_conta(cliente=cliente, numero=numero_conta)
+    conta = ContaCorrente.criaContaNova(cliente=cliente, numero=nrConta)
     contas.append(conta)
     cliente.contas.append(conta)
 
     print("\n=== Conta criada com sucesso! ===")
 
 
-def listar_contas(contas):
+def allContas(contas):
     for conta in contas:
         print("=" * 100)
         print(textwrap.dedent(str(conta)))
@@ -285,11 +285,11 @@ def main():
         opcao = menu()
 
         if opcao == "1":
-            criar_cliente(clientes)
+            newClient(clientes)
 
         elif opcao == "2":
-            numero_conta = len(contas) + 1
-            criar_conta(numero_conta, clientes, contas)
+            nrConta = len(contas) + 1
+            newConta(nrConta, clientes, contas)
 
         elif opcao == "3":
             depositar(clientes)
@@ -298,15 +298,15 @@ def main():
             sacar(clientes)
 
         elif opcao == "5":
-            exibir_extrato(clientes)
+            listaExtrato(clientes)
 
         elif opcao == "6":
-            listar_contas(contas)
+            allContas(contas)
 
         elif opcao == "7":
             break
 
         else:
-            print("Operação inválida, por favor selecione novamente a operação desejada.")
+            print("Operação inválida.")
 
 main()
